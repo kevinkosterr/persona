@@ -35,7 +35,6 @@ db.define_table('role',
                 Field('name', 'string', required=True, unique=True, label=T('Name'),
                       requires=[IS_NOT_EMPTY(),
                                 CAPITALIZE(),
-                                IS_ALPHANUMERIC(),
                                 IS_NOT_IN_DB(db, 'role.name')]
                       ),
                 singular=T("Role"),
