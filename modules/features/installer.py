@@ -1,6 +1,7 @@
 import datetime
 from gluon.cache import lazy_cache
-from gluon import DAL, Field
+from gluon import DAL, Field, current
+import glob, os
 
 feature_db = DAL("sqlite://features.sqlite")
 feature_db.define_table(
@@ -29,11 +30,17 @@ def feature_installer(feature_name, who=None, contact=None, since=None, referenc
                 # try the installer (the decorated function) and save
                 # it's success
                 print("Installing", feature_name)
-                success = bool(installer())
-            except Exception as e:
-                # if anything happens: make sure it's recorded as unsuccesful
-                success = False
-                return False
+                # test for a folder, which would mean there are json files to handle
+                folder = os.path.join(current.request.folder, 'private', 'setup_data', feature_name)
+                file_list = glob.glob(os.path.join(folder, '*')) if os.path.exists(folder) else []
+                first_file = file_list[0] if file_list else None
+                backup_database()
+                if first_file:
+                    with open(first_file, 'rb') as open_handle:
+                        success = bool(installer(handle=open_handle))
+                else:
+                    success = bool(installer(handle=None))
+
             finally:
                 feature_db.feature.update_or_insert(
                     (
@@ -46,9 +53,11 @@ def feature_installer(feature_name, who=None, contact=None, since=None, referenc
                     since=since,
                     reference=reference,
                 )
+
         else:
             # if already succesfully installed: ignore this installer
             print("Feature '{}' already installed.  ".format(feature_name))
+
         return True
 
     return decorator

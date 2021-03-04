@@ -30,7 +30,7 @@ def person():
 
     # using constraints to execute a query with in a smartgrid, we're using this to only get the
     # role_membership records of this current person.
-    role_memberships = SQLFORM.smartgrid(db.role_membership, constraints=dict(role_memberships=query),
+    role_memberships = SQLFORM.smartgrid(db.role_membership, constraints=dict(role_membership=query),
                                          onvalidation=NO_MEMBERSHIP_PERIOD_OVERLAP)
     if form.process().accepted:
         response.flash = T('Saved changes')
@@ -72,6 +72,7 @@ def download():
     http://..../[app]/default/download/[filename]
     """
     return response.download(request, db)
+
 
 # # ---- API (example) -----
 # @auth.requires_login()

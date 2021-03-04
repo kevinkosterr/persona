@@ -54,4 +54,82 @@ db.define_table('role_membership',
                 plural=T('Role memberships'),
                 )
 
-# TODO: add features here
+
+def installers():
+    import json
+
+    @feature_installer("2021-02-23 Auth Groups",
+                       who="Kevin Koster",
+                       contact="koster.k2001@gmail.com",
+                       sqlite_to_backup=db)
+    def installer_20210223_auth_groups(handle) -> bool:
+        """Installer that inserts records into the db.auth_group table,
+        we're installing these because they're used for Role Based Access Control (RBAC).
+
+        :return: boolean indicating whether the function has been completed successfully.
+        """
+
+        groups = json.load(handle)
+
+        for group in groups:
+
+            try:
+                db.auth_group.insert(role=group, description=group)
+            except RuntimeError as e:
+                db.rollback()
+                raise e
+
+        return True
+
+    @feature_installer("2021-02-23 Roles",
+                       who="Kevin Koster",
+                       contact="koster.k2001@gmail.com",
+                       sqlite_to_backup=db)
+    def installer_20210223_roles(handle) -> bool:
+        """Installer that inserts records into the db.role table
+
+        :return: boolean indicating whether the function has been completed successfully.
+        """
+        roles = json.load(handle)
+
+        for role in roles:
+
+            try:
+                db.role.insert(name=role)
+            except RuntimeError as e:
+                db.rollback()
+                raise e
+
+        return True
+
+    @feature_installer("2021-02-23 Demo people and their roles",
+                       who="Kevin Koster",
+                       contact="koster.k2001@gmail.com",
+                       sqlite_to_backup=db)
+    def installer_20210223_demo_people_and_assigned_roles(handle) -> bool:
+
+        import random
+        today = datetime.date.today()
+
+        people = json.load(handle)
+
+        for person in people:
+
+            try:
+                person_id = db.person.insert(first_name=person['first_name'],
+                                             last_name=person['last_name'],
+                                             email=person['email'])
+
+                db.role_membership.insert(role_ids=[random.randint(1, 8)],
+                                          begin_date=today - datetime.timedelta(days=10),
+                                          end_date=today + datetime.timedelta(days=30),
+                                          person_id=person_id)
+
+            except RuntimeError as e:
+                db.rollback()
+                raise e
+
+        return True
+
+
+installers()
